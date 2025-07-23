@@ -1,4 +1,5 @@
 #include "subscriber.hpp"
+#include <iostream>
 
 bool Subscriber::connect(std::string& address, int port){
 
@@ -13,8 +14,8 @@ std::string Subscriber::recv() const{
 void Subscriber::start_recv_loop(){
 
     if (!callback_){
-        throw std::runtime_error("Now I cry, pls set the callback function first with 'set_callback(urFunc)'")
-    }
+        throw std::runtime_error("Now I cry, pls set the callback function first with 'set_callback(urFunc)'");
+    };
 
     loop_running_ = true;
     Subscriber::listener_thread_ = std::thread(&Subscriber::recv_loop, this);
@@ -27,7 +28,7 @@ void Subscriber::recv_loop(){
         std::string msg = recv();
         callback_(msg);
         } catch (const std::exception& e){
-            std::cerr<<"Error in receive loop: " << e.what() << std::endl;
+            std::cerr << "Error in receive loop: " << e.what() << '\n';
         }
     }
 }
@@ -41,13 +42,13 @@ void Subscriber::stop_recv_loop(){
 
 }
 
-void Subscriber::set_callback(std::function<void(const message&)> callback){
+void Subscriber::set_callback(std::function<void(const std::string&)> callback){
     callback_ = callback;
 }
 
 void Subscriber::close(){
 
-    _transport.close();
+    transport_.close();
 }
 
 
