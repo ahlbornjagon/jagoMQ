@@ -1,5 +1,8 @@
 #pragma once
-#include <std.h>
+#include <string>    
+#include "transport.hpp"
+#include <vector>
+
 
 class Publisher {
 public: 
@@ -8,9 +11,9 @@ public:
     void stop();
 
     void sendMessage(const std::string& message);
-    int subscriber_count();
+    int subscriber_count() const;
 
-    bool running();
+    bool running() const;
 
 private:
     TcpTransport transport_;
