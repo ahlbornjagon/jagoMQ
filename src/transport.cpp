@@ -29,9 +29,9 @@ bool TcpTransport::bind(const std::string& address, int port)
     freeaddrinfo(res);
 }
 
-bool TcpTransport::listen()
+bool TcpTransport::start()
 {
-    if(socketfd_ == -1){
+    if(socketfd_ == -1 || isBinded_ == false){
 
         fprintf(stderr, "Please bind on a socket before calling listen");
         return;
@@ -43,7 +43,31 @@ bool TcpTransport::listen()
     };
 
     isListening_ = true;
+
+    std::thread accept_thread (void accept_thread_());
+
+    
+
     return true;
+}
+
+void TcpTransport::acceptThread()
+{
+    struct sockaddr_storage client_addr;
+    socklen_t addr_size = sizeof client_addr;
+    
+    while (isBinded_ && isListening_)
+    {
+        int new_fd = accept(socketfd_, (struct sockaddr *)&client_addr, &addr_size);
+        
+        if (new_fd != -1){
+            clients_.push_back(new_fd);
+        }
+        else{
+            fprintf(stderr, "Error accepting the clients connection request: %s\n", strerror(errno));
+        }
+        
+    }
 }
 
 void TcpTransport::stop()
@@ -54,6 +78,11 @@ void TcpTransport::stop()
     ::close(socketfd_);
     socketfd_ = -1;
     isBinded_ = false;
+}
+
+void TcpTransport::send(const std::string& message)
+{
+    if ()
 }
 
 

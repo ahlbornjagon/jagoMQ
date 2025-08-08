@@ -8,13 +8,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <thread>
 
 
 class TcpTransport{
 public:
     // Publisher Definitions
     bool bind(const std::string& address, int port);
-    bool listen();
+    bool start();
     void stop();
     void send(const std::string& message);
     int subscriber_count() const;
@@ -32,4 +33,7 @@ private:
     int socketfd_ = -1;
     bool isBinded_ = false;
     bool isListening_ = false;
+    std::vector<int> clients_;
+    void acceptThread();
+    std::thread accept_thread_;
 };
