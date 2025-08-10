@@ -11,13 +11,20 @@
 #include <thread>
 
 
+struct ClientInfo{
+    int fd;
+    std::string ip;
+}
+
+
 class TcpTransport{
 public:
     // Publisher Definitions
     bool bind(const std::string& address, int port);
     bool start();
     void stop();
-    void send(const std::string& message);
+    int send(const std::string& message, const std::string& ip);
+    void broadcast(const std::string$ message);
     int subscriber_count() const;
     bool running() const;
 
@@ -33,7 +40,7 @@ private:
     int socketfd_ = -1;
     bool isBinded_ = false;
     bool isListening_ = false;
-    std::vector<int> clients_;
-    void acceptThread();
+    std::vector<ClientInfo> clients_;
+    void acceptThread_();
     std::thread accept_thread_;
 };

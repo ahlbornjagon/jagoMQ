@@ -44,9 +44,7 @@ bool TcpTransport::start()
 
     isListening_ = true;
 
-    std::thread accept_thread (void accept_thread_());
-
-    
+    accept_thread_ = std::thread accept_thread (void acceptThread());
 
     return true;
 }
@@ -54,14 +52,33 @@ bool TcpTransport::start()
 void TcpTransport::acceptThread()
 {
     struct sockaddr_storage client_addr;
-    socklen_t addr_size = sizeof client_addr;
+    socklen_t addr_size = sizeof (client_addr);
+    char clientIP[16];
     
     while (isBinded_ && isListening_)
+    
     {
+        // Dont want to do the struct cast outside of here, need it to be sockeaddr_storage to handle IPV4 and IPV6
         int new_fd = accept(socketfd_, (struct sockaddr *)&client_addr, &addr_size);
-        
         if (new_fd != -1){
-            clients_.push_back(new_fd);
+            ClientInfo client;
+            client.fd = new_fd;
+
+            // Get dat fd, now we check ipv and save the address in struct
+            if(client_addr.ss_family == AF_INET){
+                struct sockaddr_in* ipv4 = (struct sockaddr_in*)&client_addr;
+                char ip_str[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &ipv4->sin_addr, ip_str, INET_ADDRSTRLEN);
+                client.ip = ip_str;
+            }
+            else if(client_addr.ss_family == AF_INET6){
+                struct socketaddr_in6* ipv6 = (struct sockaddr_in6*)&client_addr;
+                char ip_str[INET6_ADDRSTRLEN];
+                inet_ntop(AF_INET6, &ipv6->sin6_addr, ip_str, INET6_ADDRSTRLEN);
+                client.ip = ip_str; 
+            }
+            clients_.push_back(client);
+
         }
         else{
             fprintf(stderr, "Error accepting the clients connection request: %s\n", strerror(errno));
@@ -80,9 +97,44 @@ void TcpTransport::stop()
     isBinded_ = false;
 }
 
-void TcpTransport::send(const std::string& message)
+int TcpTransport::send(const std::string& message, const std::string& clientIP )
 {
-    if ()
+    if (isBinded_ && isListening_)
+    {
+        if (clientIP.empty())
+        {
+            fprintf(stderr, "Need to specify an IP bruh, what am i supposed to do? Guess?\n");
+            return -1;
+        }
+        if (clients_.empty()) {
+            fprintf(stderr, "No clients connected\n");
+            return -1;
+        }
+
+        bool found = false;
+        int sendTo_fd;
+        for (const auto& client:clients_)
+        {
+            if (client.ip == clientIP )
+            {
+                found = true;
+                sendTo_fd = client.fd;
+                break;
+            }
+        }
+        if (!found)
+        {
+            fprintf(stderr, "That IP is not subscribed...aborting (awkward)");
+            return -1;
+        }
+
+        return int bytesSent = ::send(sendTo_fd, message.c_str(), message.length(), 0)
+        
+    }
+    fprintf(stderr, "Socket not ready for sending\n");
+    return -1;
 }
+
+
 
 
