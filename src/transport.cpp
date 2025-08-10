@@ -1,5 +1,10 @@
 #include "transport.hpp"
 
+// TODO 8/10:
+//      Need to write client and server close/shutdown methods. The server will also need a recv method.
+//      I think the server will a close a socket of the recv/send returns -1? Need to look into shutdown as well
+
+
 bool TcpTransport::bind(const std::string& address, int port)
 {
     struct addrinfo hints, *res;
