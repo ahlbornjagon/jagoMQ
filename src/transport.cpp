@@ -3,7 +3,7 @@
 // TODO 8/10:
 //      Need to write client and server close/shutdown methods. The server will also need a recv method.
 //      I think the server will a close a socket of the recv/send returns -1? Need to look into shutdown as well
-
+//      Also need subscriber transport methods 
 
 bool TcpTransport::bind(const std::string& address, int port)
 {
@@ -49,7 +49,7 @@ bool TcpTransport::start()
 
     isListening_ = true;
 
-    accept_thread_ = std::thread accept_thread (void acceptThread());
+    accept_thread_ = std::thread(&TcpTransport::acceptThread, this);
 
     return true;
 }
@@ -77,7 +77,7 @@ void TcpTransport::acceptThread()
                 client.ip = ip_str;
             }
             else if(client_addr.ss_family == AF_INET6){
-                struct socketaddr_in6* ipv6 = (struct sockaddr_in6*)&client_addr;
+                struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)&client_addr;  // Fixed typo
                 char ip_str[INET6_ADDRSTRLEN];
                 inet_ntop(AF_INET6, &ipv6->sin6_addr, ip_str, INET6_ADDRSTRLEN);
                 client.ip = ip_str; 
@@ -133,12 +133,40 @@ int TcpTransport::send(const std::string& message, const std::string& clientIP )
             return -1;
         }
 
-        return int bytesSent = ::send(sendTo_fd, message.c_str(), message.length(), 0)
-        
+        int bytesSent = ::send(sendTo_fd, message.c_str(), message.length(), 0);
+        return bytesSent;
     }
     fprintf(stderr, "Socket not ready for sending\n");
     return -1;
 }
+
+void TcpTransport::getMsg() const
+{
+    int bytes_read = ::recv();
+}
+
+bool TcpTransport::connect(std::string& address, int port)
+{
+    struct addrinfo hints, *res;
+    int sockfd;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    std::string port_str = std::to_string(port);
+    getaddrinfo(address.c_str(), port_str.c_str(), &hints, &res);
+
+    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (sockfd == -1)
+    {
+        fprintf(stderr, "Connect is a no go chief, check ya address:port %s:%s", address, port);
+        return false;
+    }
+    
+    
+}
+
 
 
 
