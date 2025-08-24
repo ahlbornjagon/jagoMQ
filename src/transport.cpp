@@ -9,7 +9,6 @@ bool TcpTransport::bind(const std::string& address, int port)
 {
     struct addrinfo hints, *res;
     struct addrinfo *servinfo;
-    int sockfd;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -21,17 +20,18 @@ bool TcpTransport::bind(const std::string& address, int port)
 
     if(int status = getaddrinfo(addrChar, portChar, &hints, &servinfo) != 0){
         fprintf(stderr, "address info error:  %s\n",gai_strerror(status) );
-        return;
+        return false;
     };
 
     socketfd_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if(::bind(socketfd_, res->ai_addr, res->ai_addrlen) != 0){
         fprintf(stderr, "Error on bind: %s\n", strerror(errno));
-        return;
+        return false;
     };
 
     isBinded_ = true;
     freeaddrinfo(res);
+    return true;
 }
 
 bool TcpTransport::start()
@@ -39,12 +39,12 @@ bool TcpTransport::start()
     if(socketfd_ == -1 || isBinded_ == false){
 
         fprintf(stderr, "Please bind on a socket before calling listen");
-        return;
+        return false;
     };
 
     if (int status = ::listen(socketfd_, 10)  != 0){        // Hardcoding backlog = 10 queued connection requests
         fprintf(stderr, "Bad listener smh, check this out: %s\n", strerror(errno));
-        return;
+        return false;
     };
 
     isListening_ = true;
@@ -140,9 +140,17 @@ int TcpTransport::send(const std::string& message, const std::string& clientIP )
     return -1;
 }
 
-void TcpTransport::getMsg() const
+std::string TcpTransport::getMsg()
 {
-    int bytes_read = ::recv();
+    int bytes_read = ::recv(socketfd_, recv_buffer_->data(), recv_buffer_->size(), 0);
+
+    if(bytes_read <= 0){
+        fprintf(stderr, "No data could be read smh");
+        return "";
+    }
+
+    return std::string(recv_buffer_->data(), bytes_read);
+
 }
 
 bool TcpTransport::connect(std::string& address, int port)
@@ -160,12 +168,37 @@ bool TcpTransport::connect(std::string& address, int port)
     sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (sockfd == -1)
     {
-        fprintf(stderr, "Connect is a no go chief, check ya address:port %s:%s", address, port);
+        fprintf(stderr, "Connect is a no go chief, check ya address:port %s %d", address.c_str(), port);
         return false;
     }
-    
-    
 }
+
+void TcpTransport::close()
+{
+    ::close(socketfd_);
+    socketfd_ = -1;
+
+}
+
+int TcpTransport::broadcast(const std::string& message)
+{
+    int subs_sent_to = 0;
+    for(auto client: clients_ ){
+        int ret = send(message, client.ip );
+        if (ret <= 0){
+            fprintf(stderr, "Couldnt broadcast to this address: %s", client.ip.c_str());
+            continue;
+        }
+        else{
+            subs_sent_to++;
+        }
+    }
+    
+    return subs_sent_to;
+}
+
+
+
 
 
 

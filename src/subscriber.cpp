@@ -6,7 +6,7 @@ bool Subscriber::connect(std::string& address, int port){
     return transport_.connect(address, port) == 0;
 }
 
-std::string Subscriber::recv() const{
+std::string Subscriber::recv() {
 
     return transport_.getMsg();
 }

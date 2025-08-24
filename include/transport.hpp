@@ -27,17 +27,15 @@ public:
     bool start();
     void stop();
     int send(const std::string& message, const std::string& ip);
-    void broadcast(const std::string& message);
+    int broadcast(const std::string& message);
     int subscriber_count() const;
     bool running() const;
     void acceptThread();
 
     // Subscriber Definitions
     bool connect(std::string& address, int port);
-    void getMsg() const;
+    std::string getMsg();
     void close();
-
-
 
 private:
     int socketfd_ = -1;
@@ -45,5 +43,5 @@ private:
     bool isListening_ = false;
     std::vector<ClientInfo> clients_;
     std::thread accept_thread_;
-    char rec_buffer[MAX_RECV_BUF_SIZE];
+    std::vector<char> recv_buffer_[MAX_RECV_BUF_SIZE];
 };

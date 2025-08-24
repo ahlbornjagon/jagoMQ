@@ -15,9 +15,9 @@ void Publisher::stop(){
     transport_.stop();
 }
 
-void Publisher::sendMessage(const std::string& message){
+void Publisher::sendMessage(const std::string& message, const std::string& clientIP){
 
-    transport_.send(message);
+    transport_.send(message, clientIP);
 }
 
 int Publisher::subscriber_count() const{
@@ -28,4 +28,9 @@ int Publisher::subscriber_count() const{
 bool Publisher::running() const{
 
     return running_;
+}
+
+int TcpTransport::subscriber_count() const{
+
+    return clients_.size();
 }

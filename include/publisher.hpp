@@ -10,7 +10,7 @@ public:
     void start();
     void stop();
 
-    void sendMessage(const std::string& message);
+    void sendMessage(const std::string& message, const std::string& clientIP);
     int subscriber_count() const;
 
     bool running() const;
