@@ -55,8 +55,11 @@ int main() {
         return 1;
     }
     
-    // Publish messages
-    pub.publish("Hello, World!");
+    std::vector<std::string> subscriber_ips = pub.getSubscriberIPs();
+
+    for (const auto& client_ip : subscriber_ips) {
+        pub.sendMessage(message, client_ip);
+        fprintf(stdout, "Sent message to %s\n", client_ip.c_str());
     
     return 0;
 }
@@ -122,8 +125,9 @@ Terminal 2 (Subscriber):
 
 - `bool bind(const std::string& address, int port)`: Bind to address and port
 - `bool start()`: Start the publisher service
-- `void publish(const std::string& message)`: Publish a message
+- `void sendMessage(const std::string& message, const std::string& clientIP)`: Send message to a clientIP.
 - `void stop()`: Stop the publisher service
+- *TODO:* Need to add publish method that just sends to all ip's so user doesnt have to write it. Logic exists in publisher example
 
 ### Subscriber Class
 
