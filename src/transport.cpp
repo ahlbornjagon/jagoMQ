@@ -23,19 +23,20 @@ bool TcpTransport::bind(const std::string& address, int port)
         return false;
     };
 
-    socketfd_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if(::bind(socketfd_, res->ai_addr, res->ai_addrlen) != 0){
+    socketfd_ = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+    if(::bind(socketfd_, servinfo->ai_addr, servinfo->ai_addrlen) != 0){
         fprintf(stderr, "Error on bind: %s\n", strerror(errno));
         return false;
     };
 
     isBinded_ = true;
-    freeaddrinfo(res);
+    freeaddrinfo(servinfo);
     return true;
 }
 
 bool TcpTransport::start()
 {
+
     if(socketfd_ == -1 || isBinded_ == false){
 
         fprintf(stderr, "Please bind on a socket before calling listen");
@@ -48,14 +49,16 @@ bool TcpTransport::start()
     };
 
     isListening_ = true;
-
+    
     accept_thread_ = std::thread(&TcpTransport::acceptThread, this);
+    
 
     return true;
 }
 
 void TcpTransport::acceptThread()
 {
+
     struct sockaddr_storage client_addr;
     socklen_t addr_size = sizeof (client_addr);
     char clientIP[16];
@@ -65,6 +68,14 @@ void TcpTransport::acceptThread()
     {
         // Dont want to do the struct cast outside of here, need it to be sockeaddr_storage to handle IPV4 and IPV6
         int new_fd = accept(socketfd_, (struct sockaddr *)&client_addr, &addr_size);
+        if (new_fd == -1) {
+            // Socket was closed or error occurred
+            if (!isListening_) {
+                break; // Normal shutdown
+            }
+            fprintf(stderr, "Error accepting connection: %s\n", strerror(errno));
+            continue;
+        }
         if (new_fd != -1){
             ClientInfo client;
             client.fd = new_fd;
@@ -77,13 +88,14 @@ void TcpTransport::acceptThread()
                 client.ip = ip_str;
             }
             else if(client_addr.ss_family == AF_INET6){
-                struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)&client_addr;  // Fixed typo
+                struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)&client_addr;  
                 char ip_str[INET6_ADDRSTRLEN];
                 inet_ntop(AF_INET6, &ipv6->sin6_addr, ip_str, INET6_ADDRSTRLEN);
                 client.ip = ip_str; 
             }
+            fprintf(stdout, "New client connected from IP: %s\n", client.ip.c_str());
             clients_.push_back(client);
-
+            
         }
         else{
             fprintf(stderr, "Error accepting the clients connection request: %s\n", strerror(errno));
@@ -92,14 +104,27 @@ void TcpTransport::acceptThread()
     }
 }
 
+std::vector<std::string> TcpTransport::getSubscriberIPs() const {
+    std::vector<std::string> ips;
+    for (const auto& client : clients_) {
+        ips.push_back(client.ip);
+    }
+    return ips;
+}
+
 void TcpTransport::stop()
 {
     if(!isListening_) return;
 
     isListening_ = false;
+    
+    ::shutdown(socketfd_, SHUT_RDWR);
     ::close(socketfd_);
     socketfd_ = -1;
     isBinded_ = false;
+
+    accept_thread_.join();
+
 }
 
 int TcpTransport::send(const std::string& message, const std::string& clientIP )
@@ -142,35 +167,54 @@ int TcpTransport::send(const std::string& message, const std::string& clientIP )
 
 std::string TcpTransport::getMsg()
 {
-    int bytes_read = ::recv(socketfd_, recv_buffer_->data(), recv_buffer_->size(), 0);
+    if (recv_buffer_.empty()) {
+        recv_buffer_.resize(MAX_RECV_BUF_SIZE);
+    }
+    
+    int bytes_read = ::recv(socketfd_, recv_buffer_.data(), recv_buffer_.size(), 0);
 
-    if(bytes_read <= 0){
-        fprintf(stderr, "No data could be read smh");
-        return "";
+    if(bytes_read == 0){
+        throw std::runtime_error("Connection closed by peer");
+    }
+    if(bytes_read < 0){
+        throw std::runtime_error("recv() error: " + std::string(strerror(errno)));
     }
 
-    return std::string(recv_buffer_->data(), bytes_read);
+    return std::string(recv_buffer_.data(), bytes_read);
 
 }
 
 bool TcpTransport::connect(std::string& address, int port)
 {
     struct addrinfo hints, *res;
-    int sockfd;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     std::string port_str = std::to_string(port);
-    getaddrinfo(address.c_str(), port_str.c_str(), &hints, &res);
-
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd == -1)
-    {
-        fprintf(stderr, "Connect is a no go chief, check ya address:port %s %d", address.c_str(), port);
+    if (getaddrinfo(address.c_str(), port_str.c_str(), &hints, &res) != 0) {
+        fprintf(stderr, "getaddrinfo failed for %s:%d\n", address.c_str(), port);
         return false;
     }
+
+    socketfd_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (socketfd_ == -1) {
+        fprintf(stderr, "Socket creation failed: %s\n", strerror(errno));
+        freeaddrinfo(res);
+        return false;
+    }
+
+    if (::connect(socketfd_, res->ai_addr, res->ai_addrlen) == -1) {
+        fprintf(stderr, "Connect failed to %s:%d - %s\n", address.c_str(), port, strerror(errno));
+        ::close(socketfd_);
+        socketfd_ = -1;
+        freeaddrinfo(res);
+        return false;
+    }
+
+    freeaddrinfo(res);
+    return true;
 }
 
 void TcpTransport::close()

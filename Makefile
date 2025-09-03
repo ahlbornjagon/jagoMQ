@@ -9,7 +9,6 @@ SRCDIR = src
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=%.o)
 
-# Default target builds the library
 $(LIBNAME): $(OBJECTS)
 	$(AR) $(ARFLAGS) $(LIBNAME) $(OBJECTS)
 

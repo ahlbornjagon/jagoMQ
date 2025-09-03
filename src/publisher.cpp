@@ -2,12 +2,12 @@
 
 bool Publisher::bind(const std::string& address, int port){
 
-    return transport_.bind(address, port) == 0;
+    return transport_.bind(address, port);
 }
 
-void Publisher::start(){
+bool Publisher::start(){
 
-    transport_.start();
+    return transport_.start();
 }
 
 void Publisher::stop(){
@@ -29,6 +29,11 @@ bool Publisher::running() const{
 
     return running_;
 }
+
+std::vector<std::string> Publisher::getSubscriberIPs() const {
+    return transport_.getSubscriberIPs();
+}
+
 
 int TcpTransport::subscriber_count() const{
 
