@@ -1,0 +1,5 @@
+demo_publisher
+demo_subscriber
+transport
+*.o
+*.a

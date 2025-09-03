@@ -1,7 +1,7 @@
-#ifdef JAGOMQ_H
+#ifndef JAGOMQ_H
 #define JAGOMQ_H
-#include transport.hpp
-#include publisher.hpp
-#include subscriber.hpp
+#include "transport.hpp"
+#include "publisher.hpp"
+#include "subscriber.hpp"
 
 #endif

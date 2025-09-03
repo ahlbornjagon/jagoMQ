@@ -48,6 +48,18 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "iostream": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "clocale": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "unordered_map": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "numbers": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "span": "cpp"
     }
 }
