@@ -54,12 +54,8 @@ int main() {
         std::cerr << "Failed to start publisher" << std::endl;
         return 1;
     }
-    
-    std::vector<std::string> subscriber_ips = pub.getSubscriberIPs();
-
-    for (const auto& client_ip : subscriber_ips) {
-        pub.sendMessage(message, client_ip);
-        fprintf(stdout, "Sent message to %s\n", client_ip.c_str());
+    std::string message = "Hello Jago";
+    pub.broadcast(message);
     
     return 0;
 }
