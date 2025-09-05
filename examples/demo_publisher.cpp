@@ -31,10 +31,7 @@ int main()
         std::vector<std::string> subscriber_ips = pub.getSubscriberIPs();
         std::cout << "Number of subscribers: " << subscriber_ips.size() << std::endl;
 
-        for (const auto& client_ip : subscriber_ips) {
-            pub.sendMessage(message, client_ip);
-            fprintf(stdout, "Sent message to %s\n", client_ip.c_str());
-        }
+        pub.broadcast(message);
     }
     pub.stop();
     std::cout << "Publisher stopped." << std::endl;

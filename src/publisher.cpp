@@ -22,7 +22,7 @@ void Publisher::sendMessage(const std::string& message, const std::string& clien
 
 int Publisher::subscriber_count() const{
 
-    return transport_.subscriber_count();
+    return subscribers_.size();
 }
 
 bool Publisher::running() const{
@@ -34,8 +34,6 @@ std::vector<std::string> Publisher::getSubscriberIPs() const {
     return transport_.getSubscriberIPs();
 }
 
-
-int TcpTransport::subscriber_count() const{
-
-    return clients_.size();
+int Publisher::broadcast(const std::string& message){
+    return transport_.broadcast(message);
 }

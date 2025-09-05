@@ -11,10 +11,9 @@ public:
     void stop();
 
     void sendMessage(const std::string& message, const std::string& clientIP);
+    int broadcast(const std::string& message);
     int subscriber_count() const;
     std::vector<std::string> getSubscriberIPs() const;
-
-
     bool running() const;
 
 private:
